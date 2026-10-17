@@ -1,3 +1,4 @@
+import { t } from './i18n';
 import { buildContainerPrefix } from './wasm/xtch_core.js';
 import type { WorkerPool } from './pool';
 import type { Source } from './sources';
@@ -84,8 +85,8 @@ export async function convertSource(
     firstPage.push(pages.length);
     if (r) pages.push(...splitPages(r));
   }
-  if (!pages.length) throw new Error('変換できたページがありません');
-  if (pages.length > 0xffff) throw new Error(`ページ数が上限(65535)を超えています: ${pages.length}`);
+  if (!pages.length) throw new Error(t('error.noPages'));
+  if (pages.length > 0xffff) throw new Error(t('error.tooManyPages', { n: pages.length }));
 
   const chapters = src.chapters
     .map((c) => ({ name: c.title, start: firstPage[c.item] }))

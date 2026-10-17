@@ -3,6 +3,7 @@ import { unzip, type Unzipped } from 'fflate';
 import * as pdfjs from 'pdfjs-dist';
 import type { PDFDocumentProxy } from 'pdfjs-dist';
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+import { t } from './i18n';
 import type { ConvertOptions, Job } from './types';
 
 pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
@@ -138,7 +139,7 @@ export async function openArchive(file: File): Promise<Source> {
     ),
   );
   const names = Object.keys(entries).sort(collator.compare);
-  if (!names.length) throw new Error('ZIP内に画像が見つかりません');
+  if (!names.length) throw new Error(t('error.zipNoImages'));
 
   const items = names.map((name) => ({
     label: name,

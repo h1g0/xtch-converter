@@ -3,6 +3,7 @@ import init, { decodePage } from './wasm/xtch_core.js';
 import { convertSource, type ConvertResult } from './convert';
 import { WorkerPool } from './pool';
 import { isArchive, isImage, isPdf, openArchive, openImages, openPdf, type Source } from './sources';
+import { applyTranslations, getLang, onLangChange, setLang, t, type Lang } from './i18n';
 import { DEVICES, type ConvertOptions, type DeviceId } from './types';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -99,11 +100,12 @@ $('reset').addEventListener('click', () => {
 interface Job {
   id: number;
   files: File[];
-  label: string;
+  label: () => string;
   title: string;
   state: 'pending' | 'running' | 'done' | 'error';
   progress: [number, number];
-  message: string;
+  /** Status line, re-evaluated on render so it follows the UI language. */
+  message: () => string;
   result?: ConvertResult;
   url?: string;
   optsKey?: string;
@@ -118,23 +120,28 @@ let pool: WorkerPool | null = null;
 
 const stripExt = (n: string) => n.replace(/\.[^.]+$/, '');
 
+const noMessage = () => '';
+let statusMessage: () => string = noMessage;
+
 function addFiles(list: FileList | File[]) {
   const files = [...list];
   const images = files.filter((f) => isImage(f.name));
   const rejected: string[] = [];
   for (const f of files) {
-    if (isPdf(f.name) || isArchive(f.name)) addJob([f], f.name);
+    if (isPdf(f.name) || isArchive(f.name)) addJob([f], () => f.name);
     else if (!isImage(f.name)) rejected.push(f.name);
   }
   if (images.length) {
-    const label = images.length === 1 ? images[0].name : `${images[0].name} ほか ${images.length - 1} 枚`;
-    addJob(images, label);
+    const first = images[0].name;
+    addJob(images, () => (images.length === 1 ? first : t('files.more', { first, n: images.length - 1 })));
   }
-  statusEl.textContent = rejected.length ? `未対応の形式をスキップ: ${rejected.join(', ')}` : '';
+  statusMessage = rejected.length ? () => t('files.skipped', { names: rejected.join(', ') }) : noMessage;
+  statusEl.textContent = statusMessage();
   updateButtons();
 }
 
-function addJob(files: File[], label: string) {
+
+function addJob(files: File[], label: () => string) {
   const el = document.createElement('li');
   el.className = 'job';
   const job: Job = {
@@ -144,19 +151,19 @@ function addJob(files: File[], label: string) {
     title: stripExt(files[0].name),
     state: 'pending',
     progress: [0, 0],
-    message: '',
+    message: noMessage,
     el,
   };
   el.innerHTML = `
     <div class="job-main">
-      <input class="title" type="text" aria-label="タイトル" />
+      <input class="title" type="text" data-i18n-aria="job.title" />
       <div class="job-sub"><span class="name"></span> <span class="msg"></span></div>
       <progress max="1" value="0"></progress>
     </div>
     <div class="job-actions">
-      <button class="show ghost">プレビュー</button>
-      <a class="dl button primary" download>保存</a>
-      <button class="remove ghost" aria-label="削除">×</button>
+      <button class="show ghost" data-i18n="job.preview"></button>
+      <a class="dl button primary" download data-i18n="job.save"></a>
+      <button class="remove ghost" data-i18n-aria="job.remove">×</button>
     </div>`;
   const titleInput = el.querySelector<HTMLInputElement>('.title')!;
   titleInput.value = job.title;
@@ -165,7 +172,7 @@ function addJob(files: File[], label: string) {
     job.optsKey = undefined; // title is stored in the file
     renderJob(job);
   });
-  el.querySelector('.name')!.textContent = label;
+  applyTranslations(el);
   el.querySelector('.show')!.addEventListener('click', () => showPreview(job));
   el.querySelector('.remove')!.addEventListener('click', () => removeJob(job));
   jobs.push(job);
@@ -189,15 +196,20 @@ function renderJob(job: Job) {
   const { el, result } = job;
   el.dataset.state = job.state;
   const bar = el.querySelector('progress')!;
-  const [d, t] = job.progress;
-  bar.max = t || 1;
+  const [d, total] = job.progress;
+  bar.max = total || 1;
   bar.value = job.state === 'done' ? bar.max : d;
   bar.hidden = job.state !== 'running';
-  let msg = job.message;
+  el.querySelector('.name')!.textContent = job.label();
+  let msg = job.message();
   if (job.state === 'done' && result) {
-    msg = `${result.pages.length} ページ · ${formatBytes(result.blob.size)} · ${(result.millis / 1000).toFixed(1)} 秒`;
-    if (result.warnings.length) msg += ` · 警告 ${result.warnings.length} 件`;
-    if (isStale(job)) msg += ' · 設定変更あり（再変換で反映）';
+    msg = t('job.summary', {
+      pages: result.pages.length,
+      size: formatBytes(result.blob.size),
+      secs: (result.millis / 1000).toFixed(1),
+    });
+    if (result.warnings.length) msg += t('job.warnings', { n: result.warnings.length });
+    if (isStale(job)) msg += t('job.stale');
   }
   el.querySelector('.msg')!.textContent = msg;
   el.querySelector<HTMLElement>('.msg')!.title = result?.warnings.join('\n') ?? '';
@@ -216,7 +228,7 @@ function renderJob(job: Job) {
 function updateButtons() {
   const todo = jobs.filter((j) => j.state !== 'done' || isStale(j));
   convertBtn.disabled = !!running || !todo.length;
-  convertBtn.textContent = jobs.some((j) => j.state === 'done') && todo.length ? '再変換' : '変換';
+  convertBtn.textContent = t(jobs.some((j) => j.state === 'done') && todo.length ? 'action.reconvert' : 'action.convert');
   clearBtn.disabled = !!running || !jobs.length;
   cancelBtn.hidden = !running;
 }
@@ -250,19 +262,19 @@ async function convertJob(job: Job, signal: AbortSignal) {
   const opts = readOptions();
   const key = optsKeyFor(job);
   job.state = 'running';
-  job.message = '読み込み中…';
+  job.message = () => t('job.loading');
   job.progress = [0, 0];
   renderJob(job);
   let src: Source | null = null;
   try {
     src = await openSource(job);
-    job.message = '';
+    job.message = noMessage;
     const result = await convertSource(src, opts, pool!, {
       title: job.title,
       signal,
-      onProgress: (d, t) => {
-        job.progress = [d, t];
-        job.message = `${d} / ${t}`;
+      onProgress: (d, total) => {
+        job.progress = [d, total];
+        job.message = () => `${d} / ${total}`;
         renderJob(job);
       },
     });
@@ -271,11 +283,12 @@ async function convertJob(job: Job, signal: AbortSignal) {
     job.url = URL.createObjectURL(result.blob);
     job.optsKey = key;
     job.state = 'done';
-    job.message = '';
+    job.message = noMessage;
     if (!selected || selected === job) showPreview(job);
   } catch (e) {
     job.state = (e as Error).name === 'AbortError' ? 'pending' : 'error';
-    job.message = job.state === 'error' ? `エラー: ${(e as Error).message}` : '中止しました';
+    const msg = (e as Error).message;
+    job.message = job.state === 'error' ? () => t('job.error', { msg }) : () => t('job.cancelled');
     console.error(e);
   } finally {
     src?.dispose();
@@ -354,7 +367,11 @@ function showPreview(job: Job) {
   $('previewTitle').textContent = res.fileName;
   const first = res.pages[0];
   const v = new DataView(first.buffer, first.byteOffset);
-  $('previewInfo').textContent = `${v.getUint16(4, true)}×${v.getUint16(6, true)} · ${res.pages.length} ページ`;
+  $('previewInfo').textContent = t('preview.info', {
+    w: v.getUint16(4, true),
+    h: v.getUint16(6, true),
+    pages: res.pages.length,
+  });
 
   thumbObserver?.disconnect();
   thumbObserver = new IntersectionObserver(
@@ -376,7 +393,7 @@ function showPreview(job: Job) {
     c.width = THUMB_W;
     c.height = Math.round((THUMB_W * v.getUint16(6, true)) / v.getUint16(4, true));
     c.dataset.i = String(i);
-    c.title = `${i + 1} ページ`;
+    c.title = t('preview.page', { n: i + 1 });
     c.addEventListener('click', () => openViewer(i));
     const cap = document.createElement('figcaption');
     cap.textContent = String(i + 1);
@@ -421,5 +438,21 @@ function formatBytes(n: number) {
   return `${(n / 1024 / 1024).toFixed(1)} MB`;
 }
 
+// ---------- language ----------
+
+const langButtons = document.querySelectorAll<HTMLButtonElement>('.lang button');
+function syncLangButtons() {
+  langButtons.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.lang === getLang())));
+}
+langButtons.forEach((b) => b.addEventListener('click', () => setLang(b.dataset.lang as Lang)));
+onLangChange(() => {
+  syncLangButtons();
+  statusEl.textContent = statusMessage();
+  jobs.forEach(renderJob);
+  if (selected) showPreview(selected);
+  if (viewer.open) openViewer(viewerIndex);
+});
+
+setLang(getLang());
 restoreSettings();
 syncSettingsUi();

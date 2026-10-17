@@ -1,9 +1,11 @@
 # XTCH Converter
 
-PDF や画像 ZIP（CBZ）を、Xteink X4 / X3 用の `.xtch`（4階調）または `.xtc`（2値）に変換するブラウザアプリです。
-画像処理とエンコードは Rust → WebAssembly で行い、CPU コア数に応じた Web Worker で並列に処理します。ファイルは外部に送信されません。
+English | [日本語](README.ja.md)
 
-## 使い方
+A browser app that converts PDFs and image ZIPs (CBZ) into `.xtch` (4-level grayscale) or `.xtc` (black and white) files for the Xteink X4 / X3.
+Image processing and encoding run in Rust compiled to WebAssembly, spread across Web Workers (one per CPU core). Files never leave your browser.
+
+## Usage
 
 ```bash
 npm install
@@ -11,68 +13,69 @@ npm run build:wasm
 npm run dev
 ```
 
-ブラウザで http://localhost:5173 を開き、ファイルをドロップして「変換」を押します。
+Open http://localhost:5173, drop your files, and press "Convert".
 
-配布用の静的ファイルは `npm run build` で `dist/` に出力されます。相対パスで出力されるので、任意の静的ホスティング（GitHub Pages など）やローカルの静的サーバ（`npm run preview`、`npx serve dist` など）で動きます。Web Worker と wasm を使うため、`file://` で直接開いても動きません。
+`npm run build` writes a static site to `dist/`. It uses relative paths, so it can be served from any static host (GitHub Pages, etc.) or a local static server (`npm run preview`, `npx serve dist`, …). Opening it directly via `file://` does not work, because Web Workers and wasm need to be served over HTTP.
 
-### 必要なもの
+### Requirements
 
-- Node.js 20.19 以上
-- Rust と `wasm32-unknown-unknown` ターゲット、`wasm-pack`（生成された wasm はリポジトリに含めていないため、初回にビルドが必要です）
+- Node.js 20.19 or later
+- Rust with the `wasm32-unknown-unknown` target, and `wasm-pack` (the generated wasm is not checked in, so it must be built once)
 
-## 入力
+## Input
 
-| 形式 | 扱い |
+| Format | Handling |
 |---|---|
-| PDF | pdf.js でページをレンダリングします。しおりは章として引き継ぎます |
-| ZIP / CBZ | 中の画像を自然順（`2.jpg` < `10.jpg`）で並べます。フォルダが複数ある場合はフォルダごとに章を作ります |
-| 画像ファイル（複数可） | 名前順に並べて 1 冊にまとめます |
+| PDF | Pages are rendered with pdf.js. The outline (bookmarks) becomes chapters |
+| ZIP / CBZ | Images are sorted in natural order (`2.jpg` < `10.jpg`). If images span several folders, each folder becomes a chapter |
+| Image files (one or more) | Sorted by name and combined into one book |
 
-## レイアウト
+## Layout
 
-- **自動**: 画面（X4: 480×800 / X3: 528×792）より大きい画像は分割し、収まる画像はそのまま 1 画面に収めます。PDF はベクターなので常に分割扱いです
-- **分割**: 画像の短辺を画面の長辺（800 / 792px）に合わせて拡縮し、画面の短辺幅で切り出します
-  - 縦長の画像は 90° 回転し、上から順に帯状に切り出します（回転方向は設定で変更できます）
-  - 横長の画像（見開きなど）は回転せず、左→右または右→左（漫画）の順に切り出します
-  - 切り出し位置は均等に配置され、最後のページが余白で終わらないようにしています。「最小のりしろ」で重なり幅の下限を指定できます
-- **1画面に収める**: 分割せずに縮小します
+- **Auto**: images larger than the screen (X4: 480×800 / X3: 528×792) are split; images that fit are placed on a single screen. PDFs are vector data, so they are always split
+- **Split**: the image's short side is scaled to the screen's long side (800 / 792 px), then the image is cut into screen-width pieces
+  - Portrait images are rotated 90° and cut into bands from top to bottom (the rotation direction is configurable)
+  - Landscape images (e.g. two-page spreads) are not rotated and are cut left → right or right → left (manga)
+  - Cut positions are spread evenly so the last page does not end in blank space. "Min overlap" sets a lower bound on how much neighbouring pieces overlap
+- **Fit to one screen**: scale down without splitting
 
-画質の設定として、余白の自動カット、ディザリング（Floyd–Steinberg / Atkinson / Bayer / なし）、ガンマ、黒レベル、白レベルを選べます。
+Quality options: automatic margin trimming, dithering (Floyd–Steinberg / Atkinson / Bayer / none), gamma, black level and white level.
 
-## 端末で「メモリエラー」と表示される場合
+## If the device shows "Memory error"
 
-端末をスリープさせてから解除し、もう一度ファイルを開いてください。
+Put the device to sleep, wake it, and open the file again.
 
-ファームウェアは 1 ページ分のデータを、ひとつながりのメモリに読み込んで表示します（X3 の XTCH では約 104KB、X4 の XTCH では 96KB）。内蔵のファイルサーバ（Wi‑Fi）でアップロードした直後などはこの領域を確保できず、変換したファイルが正常でもエラーになります。スリープを挟むとメモリが解放されて開けるようになります。CrossPoint Reader を入れた X3 で確認しています。
+The firmware loads each page into one contiguous block of memory (about 104 KB for X3 XTCH, 96 KB for X4 XTCH). Right after using the built-in file server (Wi‑Fi) to upload, that block may not be available, and even a valid file fails to open. Sleeping and waking the device frees the memory. Confirmed on an X3 running CrossPoint Reader.
 
-## 構成
+## Project layout
 
 ```
-core/                 Rust（wasm-bindgen）
-  src/format.rs       XTG/XTH エンコードと XTC/XTCH コンテナ
-  src/image.rs        グレースケール化、Lanczos3 リサイズ、回転、余白検出
-  src/dither.rs       階調補正と 2/4 階調への量子化
-  src/layout.rs       分割・回転・フィットの判定とパイプライン
-web/                  フロントエンド（Vite + TypeScript）
-  src/sources.ts      PDF / ZIP / 画像の読み込み
-  src/worker.ts       画像デコードと wasm 変換（Worker）
-  src/pool.ts         Worker プール
-  src/convert.ts      並列変換とコンテナの組み立て
+core/                 Rust (wasm-bindgen)
+  src/format.rs       XTG/XTH encoding and the XTC/XTCH container
+  src/image.rs        grayscale conversion, Lanczos3 resize, rotation, margin detection
+  src/dither.rs       tone adjustment and quantization to 2/4 levels
+  src/layout.rs       split / rotate / fit decisions and the pipeline
+web/                  frontend (Vite + TypeScript)
+  src/sources.ts      reading PDF / ZIP / image inputs
+  src/worker.ts       image decoding and wasm conversion (Worker)
+  src/pool.ts         worker pool
+  src/convert.ts      parallel conversion and container assembly
+  src/i18n.ts         UI strings (English / Japanese)
   src/main.ts         UI
-scripts/inspect-xtc.mjs   出力ファイルの検証・PGM 書き出し
+scripts/inspect-xtc.mjs   validate an output file and dump pages as PGM
 ```
 
-wasm を変更した場合は `npm run build:wasm` を実行してください。テストは `npm test`（`cargo test`）で実行します。
+After changing the Rust code, run `npm run build:wasm`. Run the tests with `npm test` (`cargo test`).
 
-出力ファイルの検証:
+Validating an output file:
 
 ```bash
 node scripts/inspect-xtc.mjs book.xtch --dump out/
 ```
 
-## フォーマットのメモ
+## Format notes
 
-- [CrazyCoder 氏の仕様メモ](https://gist.github.com/CrazyCoder/b125f26d6987c0620058249f59f1327d) と [CrossPoint Reader](https://github.com/crosspoint-reader/crosspoint-reader) のパーサ（`lib/Xtc`）に合わせています
-- ヘッダは 56 バイト（バージョン 1.0、`0x30` に章オフセット）。メタデータは `0x38` に置き、タイトル（128B）と作成日時を書き込みます
-- XTH は 2 枚のビットプレーンを列優先（右の列から）、1 バイトに縦 8 ピクセルで格納します。値の対応は 0=白、1=濃いグレー、2=薄いグレー、3=黒です
-- 章のページ番号は 1 始まりで書き込みます（CrossPoint の実装に合わせています）
+- Follows [CrazyCoder's format notes](https://gist.github.com/CrazyCoder/b125f26d6987c0620058249f59f1327d) and the parser in [CrossPoint Reader](https://github.com/crosspoint-reader/crosspoint-reader) (`lib/Xtc`)
+- The header is 56 bytes (version 1.0, chapter offset at `0x30`). Metadata starts at `0x38` and holds the title (128 B) and creation time
+- XTH stores two bit planes in column-major order (rightmost column first), 8 vertical pixels per byte. Values map 0 = white, 1 = dark gray, 2 = light gray, 3 = black
+- Chapter page numbers are written 1-based (matching CrossPoint)

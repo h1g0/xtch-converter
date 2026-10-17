@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ja">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -8,16 +8,22 @@
   </head>
   <body>
     <header class="top">
-      <h1>XTCH Converter</h1>
-      <p class="sub">PDF・画像ZIPを Xteink X4 / X3 用の <code>.xtch</code> / <code>.xtc</code> に変換します。処理はすべてブラウザ内で行われ、ファイルはどこにも送信されません。</p>
+      <div class="top-row">
+        <h1>XTCH Converter</h1>
+        <div class="lang" role="group" aria-label="Language / 言語">
+          <button type="button" data-lang="en" lang="en">English</button>
+          <button type="button" data-lang="ja" lang="ja">日本語</button>
+        </div>
+      </div>
+      <p class="sub" data-i18n-html="header.sub">Converts PDFs and image ZIPs into <code>.xtch</code> / <code>.xtc</code> files for the Xteink X4 / X3. Everything runs in your browser; your files are never uploaded.</p>
     </header>
 
     <main class="layout">
-      <section class="panel settings" aria-label="変換設定">
-        <h2>設定</h2>
+      <section class="panel settings" aria-label="Conversion settings" data-i18n-aria="settings.aria">
+        <h2 data-i18n="settings.title">Settings</h2>
         <form id="settings">
           <fieldset>
-            <legend>端末</legend>
+            <legend data-i18n="device.legend">Device</legend>
             <div class="seg">
               <label><input type="radio" name="device" value="x4" checked /><span>X4<small>480×800</small></span></label>
               <label><input type="radio" name="device" value="x3" /><span>X3<small>528×792</small></span></label>
@@ -25,65 +31,65 @@
           </fieldset>
 
           <fieldset>
-            <legend>出力形式</legend>
+            <legend data-i18n="format.legend">Output format</legend>
             <div class="seg">
-              <label><input type="radio" name="bits" value="2" checked /><span>XTCH<small>4階調</small></span></label>
-              <label><input type="radio" name="bits" value="1" /><span>XTC<small>白黒2値</small></span></label>
+              <label><input type="radio" name="bits" value="2" checked /><span>XTCH<small data-i18n="format.xtch">4 grays</small></span></label>
+              <label><input type="radio" name="bits" value="1" /><span>XTC<small data-i18n="format.xtc">Black &amp; white</small></span></label>
             </div>
           </fieldset>
 
           <fieldset>
-            <legend>レイアウト</legend>
+            <legend data-i18n="layout.legend">Layout</legend>
             <select name="mode">
-              <option value="auto">自動（画面より大きい画像は分割）</option>
-              <option value="split">常に分割</option>
-              <option value="fit">分割せず1画面に収める</option>
+              <option value="auto" data-i18n="layout.auto">Auto (split images larger than the screen)</option>
+              <option value="split" data-i18n="layout.split">Always split</option>
+              <option value="fit" data-i18n="layout.fit">Fit on one screen (no split)</option>
             </select>
-            <p class="hint">分割時は画像の短辺を画面の長辺に合わせて拡縮し、画面サイズごとに切り出します。PDFは「自動」で分割扱いです。</p>
+            <p class="hint" data-i18n="layout.hint">When splitting, the image's short side is scaled to the screen's long side and cut into screen-sized pages. PDFs are always split in Auto mode.</p>
           </fieldset>
 
           <fieldset class="split-only">
-            <legend>縦長画像の回転方向</legend>
+            <legend data-i18n="rotate.legend">Rotation of portrait images</legend>
             <div class="seg">
-              <label><input type="radio" name="rotate" value="cw" checked /><span>時計回り</span></label>
-              <label><input type="radio" name="rotate" value="ccw" /><span>反時計回り</span></label>
+              <label><input type="radio" name="rotate" value="cw" checked /><span data-i18n="rotate.cw">Clockwise</span></label>
+              <label><input type="radio" name="rotate" value="ccw" /><span data-i18n="rotate.ccw">Counter-clockwise</span></label>
             </div>
           </fieldset>
 
           <fieldset class="split-only">
-            <legend>横長画像の分割順</legend>
+            <legend data-i18n="order.legend">Order of landscape pieces</legend>
             <div class="seg">
-              <label><input type="radio" name="stripOrder" value="ltr" checked /><span>左 → 右</span></label>
-              <label><input type="radio" name="stripOrder" value="rtl" /><span>右 → 左<small>漫画</small></span></label>
+              <label><input type="radio" name="stripOrder" value="ltr" checked /><span data-i18n="order.ltr">Left → right</span></label>
+              <label><input type="radio" name="stripOrder" value="rtl" /><span><span data-i18n="order.rtl">Right → left</span><small data-i18n="order.manga">Manga</small></span></label>
             </div>
           </fieldset>
 
           <fieldset class="split-only">
-            <legend>最小のりしろ <output name="minOverlapOut"></output></legend>
+            <legend><span data-i18n="overlap.legend">Min overlap</span> <output name="minOverlapOut"></output></legend>
             <input type="range" name="minOverlap" min="0" max="160" step="4" value="0" />
           </fieldset>
 
           <fieldset>
-            <legend>画質</legend>
-            <label class="row"><input type="checkbox" name="trim" /> 余白を自動カット</label>
-            <label class="row">ディザリング
+            <legend data-i18n="quality.legend">Quality</legend>
+            <label class="row"><input type="checkbox" name="trim" /> <span data-i18n="quality.trim">Trim blank margins</span></label>
+            <label class="row"><span data-i18n="quality.dither">Dithering</span>
               <select name="dither">
                 <option value="floyd-steinberg">Floyd–Steinberg</option>
                 <option value="atkinson">Atkinson</option>
-                <option value="ordered">パターン (Bayer)</option>
-                <option value="none">なし（単純量子化）</option>
+                <option value="ordered" data-i18n="dither.ordered">Pattern (Bayer)</option>
+                <option value="none" data-i18n="dither.none">None (plain quantization)</option>
               </select>
             </label>
-            <label class="slider">ガンマ <output name="gammaOut"></output>
+            <label class="slider"><span data-i18n="quality.gamma">Gamma</span> <output name="gammaOut"></output>
               <input type="range" name="gamma" min="0.5" max="2.5" step="0.05" value="1" />
             </label>
-            <label class="slider">黒レベル <output name="blackOut"></output>
+            <label class="slider"><span data-i18n="quality.black">Black level</span> <output name="blackOut"></output>
               <input type="range" name="black" min="0" max="128" step="1" value="0" />
             </label>
-            <label class="slider">白レベル <output name="whiteOut"></output>
+            <label class="slider"><span data-i18n="quality.white">White level</span> <output name="whiteOut"></output>
               <input type="range" name="white" min="128" max="255" step="1" value="255" />
             </label>
-            <button type="button" id="reset" class="link">画質設定をリセット</button>
+            <button type="button" id="reset" class="link" data-i18n="quality.reset">Reset quality settings</button>
           </fieldset>
         </form>
       </section>
@@ -91,28 +97,28 @@
       <section class="work">
         <label id="drop" class="drop" tabindex="0">
           <input id="file" type="file" multiple accept=".pdf,.zip,.cbz,image/*" hidden />
-          <strong>PDF / ZIP (CBZ) / 画像ファイル</strong>
-          <span>ここにドロップ、またはクリックして選択</span>
-          <small>複数の画像ファイルは名前順に1冊にまとめます</small>
+          <strong data-i18n="drop.title">PDF / ZIP (CBZ) / image files</strong>
+          <span data-i18n="drop.action">Drop here, or click to choose</span>
+          <small data-i18n="drop.hint">Multiple image files are combined into one book in name order</small>
         </label>
 
         <div class="actions">
-          <button id="convert" class="primary" disabled>変換</button>
-          <button id="cancel" hidden>中止</button>
-          <button id="clear" class="ghost" disabled>リストを空にする</button>
+          <button id="convert" class="primary" disabled>Convert</button>
+          <button id="cancel" hidden data-i18n="action.cancel">Cancel</button>
+          <button id="clear" class="ghost" disabled data-i18n="action.clear">Clear list</button>
           <span id="status" class="status" role="status"></span>
         </div>
 
         <ul id="jobs" class="jobs"></ul>
 
         <p class="note">
-          <strong>端末で「メモリエラー」と表示されたら</strong>
-          一度スリープさせてから解除し、もう一度ファイルを開いてください。内蔵のファイルサーバでアップロードした直後などは端末の空きメモリが不足し、正常なファイルでもエラーになることがあります。
+          <strong data-i18n="note.title">If the device shows "Memory error"</strong>
+          <span data-i18n="note.body">Put the device to sleep, wake it, and open the file again. Right after uploading with the built-in file server, the device may be short of free memory, and even a valid file can fail to open.</span>
         </p>
 
         <section id="preview" class="panel preview" hidden>
           <div class="preview-head">
-            <h2 id="previewTitle">プレビュー</h2>
+            <h2 id="previewTitle">Preview</h2>
             <span id="previewInfo" class="muted"></span>
           </div>
           <div id="thumbs" class="thumbs"></div>
@@ -122,10 +128,10 @@
 
     <dialog id="viewer">
       <div class="viewer-bar">
-        <button id="prev" aria-label="前のページ">‹</button>
+        <button id="prev" aria-label="Previous page" data-i18n-aria="viewer.prev">‹</button>
         <span id="viewerInfo"></span>
-        <button id="next" aria-label="次のページ">›</button>
-        <button id="close" aria-label="閉じる">×</button>
+        <button id="next" aria-label="Next page" data-i18n-aria="viewer.next">›</button>
+        <button id="close" aria-label="Close" data-i18n-aria="viewer.close">×</button>
       </div>
       <canvas id="big"></canvas>
     </dialog>
