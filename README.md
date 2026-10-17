@@ -5,7 +5,13 @@ English | [日本語](README.ja.md)
 A browser app that converts PDFs and image ZIPs (CBZ) into `.xtch` (4-level grayscale) or `.xtc` (black and white) files for the Xteink X4 / X3.
 Image processing and encoding run in Rust compiled to WebAssembly, spread across Web Workers (one per CPU core). Files never leave your browser.
 
+**Use it online: https://clutte.red/xtch-converter/**
+
 ## Usage
+
+Open the page above, drop your files, and press "Convert".
+
+### Running locally
 
 ```bash
 npm install
@@ -13,11 +19,13 @@ npm run build:wasm
 npm run dev
 ```
 
-Open http://localhost:5173, drop your files, and press "Convert".
+Then open http://localhost:5173.
 
 `npm run build` writes a static site to `dist/`. It uses relative paths, so it can be served from any static host (GitHub Pages, etc.) or a local static server (`npm run preview`, `npx serve dist`, …). Opening it directly via `file://` does not work, because Web Workers and wasm need to be served over HTTP.
 
-### Requirements
+Pushes to `master` are built and deployed to GitHub Pages by [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml).
+
+#### Requirements
 
 - Node.js 20.19 or later
 - Rust with the `wasm32-unknown-unknown` target, and `wasm-pack` (the generated wasm is not checked in, so it must be built once)

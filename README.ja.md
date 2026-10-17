@@ -5,7 +5,13 @@
 PDF や画像 ZIP（CBZ）を、Xteink X4 / X3 用の `.xtch`（4階調）または `.xtc`（2値）に変換するブラウザアプリです。
 画像処理とエンコードは Rust → WebAssembly で行い、CPU コア数に応じた Web Worker で並列に処理します。ファイルは外部に送信されません。
 
+**オンラインで使う: https://clutte.red/xtch-converter/**
+
 ## 使い方
+
+上のページを開き、ファイルをドロップして「変換」を押します。
+
+### ローカルで動かす
 
 ```bash
 npm install
@@ -13,11 +19,13 @@ npm run build:wasm
 npm run dev
 ```
 
-ブラウザで http://localhost:5173 を開き、ファイルをドロップして「変換」を押します。
+ブラウザで http://localhost:5173 を開きます。
 
 配布用の静的ファイルは `npm run build` で `dist/` に出力されます。相対パスで出力されるので、任意の静的ホスティング（GitHub Pages など）やローカルの静的サーバ（`npm run preview`、`npx serve dist` など）で動きます。Web Worker と wasm を使うため、`file://` で直接開いても動きません。
 
-### 必要なもの
+`master` へのプッシュは [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) でビルドされ、GitHub Pages に公開されます。
+
+#### 必要なもの
 
 - Node.js 20.19 以上
 - Rust と `wasm32-unknown-unknown` ターゲット、`wasm-pack`（生成された wasm はリポジトリに含めていないため、初回にビルドが必要です）
