@@ -3,6 +3,7 @@ name = "xtch-core"
 version = "0.1.0"
 edition = "2021"
 description = "Image processing and XTC/XTCH encoding for Xteink e-paper readers"
+repository = "https://github.com/h1g0/xtch-converter"
 license = "MIT"
 
 [lib]

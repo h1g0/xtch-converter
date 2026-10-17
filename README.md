@@ -79,3 +79,7 @@ node scripts/inspect-xtc.mjs book.xtch --dump out/
 - The header is 56 bytes (version 1.0, chapter offset at `0x30`). Metadata starts at `0x38` and holds the title (128 B) and creation time
 - XTH stores two bit planes in column-major order (rightmost column first), 8 vertical pixels per byte. Values map 0 = white, 1 = dark gray, 2 = light gray, 3 = black
 - Chapter page numbers are written 1-based (matching CrossPoint)
+
+## License
+
+[MIT](LICENSE)

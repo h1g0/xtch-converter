@@ -2,6 +2,7 @@
   "name": "xtch-converter",
   "private": true,
   "version": "0.1.0",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "build:wasm": "wasm-pack build core --target web --release --out-dir ../web/src/wasm --out-name xtch_core",
