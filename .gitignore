@@ -1,0 +1,8 @@
+node_modules/
+dist/
+target/
+web/src/wasm/
+*.xtc
+*.xtch
+web/public/pdfjs/
+web/public/__test/

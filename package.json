@@ -1,0 +1,23 @@
+{
+  "name": "xtch-converter",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "build:wasm": "wasm-pack build core --target web --release --out-dir ../web/src/wasm --out-name xtch_core",
+    "assets": "node scripts/copy-pdfjs-assets.mjs",
+    "predev": "npm run assets",
+    "dev": "vite",
+    "build": "npm run build:wasm && npm run assets && tsc --noEmit -p . && vite build",
+    "preview": "vite preview",
+    "test": "cargo test --release --manifest-path core/Cargo.toml"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "vite": "^8.3.4"
+  },
+  "dependencies": {
+    "fflate": "^0.8.3",
+    "pdfjs-dist": "^6.4.299"
+  }
+}
