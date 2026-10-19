@@ -44,6 +44,7 @@ const en = {
   'note.body':
     'Put the device to sleep, wake it, and open the file again. Right after uploading with the built-in file server, the device may be short of free memory, and even a valid file can fail to open.',
   'preview.title': 'Preview',
+  'footer.author': 'About the author',
   'viewer.prev': 'Previous page',
   'viewer.next': 'Next page',
   'viewer.close': 'Close',
@@ -110,6 +111,7 @@ const ja: Record<MessageKey, string> = {
   'note.body':
     '一度スリープさせてから解除し、もう一度ファイルを開いてください。内蔵のファイルサーバでアップロードした直後などは端末の空きメモリが不足し、正常なファイルでもエラーになることがあります。',
   'preview.title': 'プレビュー',
+  'footer.author': '作者について',
   'viewer.prev': '前のページ',
   'viewer.next': '次のページ',
   'viewer.close': '閉じる',
