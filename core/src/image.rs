@@ -12,7 +12,11 @@ pub struct Gray {
 
 impl Gray {
     pub fn new(w: usize, h: usize, fill: f32) -> Self {
-        Gray { w, h, px: vec![fill; w * h] }
+        Gray {
+            w,
+            h,
+            px: vec![fill; w * h],
+        }
     }
 
     /// RGBA8 -> luma, compositing transparency over white.
@@ -81,13 +85,16 @@ impl Gray {
     /// pixels are noticeably darker than paper, which ignores scan specks.
     pub fn content_bbox(&self) -> Option<(usize, usize, usize, usize)> {
         const DARK: f32 = 200.0;
+        if self.w == 0 {
+            return None;
+        }
         let mut rows = vec![0usize; self.h];
         let mut cols = vec![0usize; self.w];
-        for y in 0..self.h {
-            for x in 0..self.w {
-                if self.px[y * self.w + x] < DARK {
-                    rows[y] += 1;
-                    cols[x] += 1;
+        for (row, line) in rows.iter_mut().zip(self.px.chunks_exact(self.w)) {
+            for (col, &v) in cols.iter_mut().zip(line) {
+                if v < DARK {
+                    *row += 1;
+                    *col += 1;
                 }
             }
         }
@@ -192,7 +199,12 @@ impl Weights {
             starts.push(left);
             lens.push(n);
         }
-        Weights { starts, lens, stride, w }
+        Weights {
+            starts,
+            lens,
+            stride,
+            w,
+        }
     }
 
     fn get(&self, i: usize) -> (usize, &[f32]) {
@@ -207,7 +219,11 @@ mod tests {
 
     #[test]
     fn rotate_roundtrip() {
-        let g = Gray { w: 3, h: 2, px: vec![1., 2., 3., 4., 5., 6.] };
+        let g = Gray {
+            w: 3,
+            h: 2,
+            px: vec![1., 2., 3., 4., 5., 6.],
+        };
         let cw = g.rotate_cw();
         assert_eq!((cw.w, cw.h), (2, 3));
         // top row of rotated image = left column of source, bottom-up
@@ -234,7 +250,7 @@ mod tests {
             }
         }
         let (x, y, w, h) = g.content_bbox().unwrap();
-        assert!(x <= 50 && x >= 40 && y <= 100 && y >= 90);
+        assert!((40..=50).contains(&x) && (90..=100).contains(&y));
         assert!(x + w >= 300 && y + h >= 150);
         assert!(Gray::new(10, 10, 255.0).content_bbox().is_none());
     }

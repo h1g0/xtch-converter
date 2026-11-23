@@ -197,7 +197,12 @@ pub fn parse_header_only(buf: &[u8]) -> Result<PageInfo, String> {
     if size != page_data_size(width, height, bits) {
         return Err("page data size mismatch".into());
     }
-    Ok(PageInfo { bits, width, height, len: PAGE_HEADER_SIZE + size })
+    Ok(PageInfo {
+        bits,
+        width,
+        height,
+        len: PAGE_HEADER_SIZE + size,
+    })
 }
 
 /// Build an XTC (1-bit) or XTCH (2-bit) container from concatenated pages.
@@ -221,7 +226,11 @@ pub fn build_prefix(pages: &[PageInfo], meta: &BookMeta) -> Result<Vec<u8>, Stri
         return Err("no pages".into());
     }
     if pages.len() > u16::MAX as usize {
-        return Err(format!("too many pages ({}), max {}", pages.len(), u16::MAX));
+        return Err(format!(
+            "too many pages ({}), max {}",
+            pages.len(),
+            u16::MAX
+        ));
     }
     let bits = pages[0].bits;
     if pages.iter().any(|p| p.bits != bits) {
@@ -255,7 +264,11 @@ pub fn build_prefix(pages: &[PageInfo], meta: &BookMeta) -> Result<Vec<u8>, Stri
     out[24..32].copy_from_slice(&(table_offset as u64).to_le_bytes());
     out[32..40].copy_from_slice(&(data_offset as u64).to_le_bytes());
     out[40..48].copy_from_slice(&0u64.to_le_bytes()); // thumbnails
-    let ch_off = if chapters.is_empty() { 0 } else { chapter_offset as u64 };
+    let ch_off = if chapters.is_empty() {
+        0
+    } else {
+        chapter_offset as u64
+    };
     out[48..56].copy_from_slice(&ch_off.to_le_bytes());
 
     // Metadata
@@ -269,7 +282,8 @@ pub fn build_prefix(pages: &[PageInfo], meta: &BookMeta) -> Result<Vec<u8>, Stri
 
     // Chapters: page numbers are stored 1-based (CrossPoint decrements them).
     for (i, c) in chapters.iter().enumerate() {
-        let e = &mut out[chapter_offset + i * CHAPTER_SIZE..chapter_offset + (i + 1) * CHAPTER_SIZE];
+        let e =
+            &mut out[chapter_offset + i * CHAPTER_SIZE..chapter_offset + (i + 1) * CHAPTER_SIZE];
         put_str(&mut e[..CHAPTER_NAME_LEN], &c.name);
         let end = (c.end as usize).min(page_count - 1) as u16;
         e[80..82].copy_from_slice(&(c.start + 1).to_le_bytes());
@@ -279,7 +293,8 @@ pub fn build_prefix(pages: &[PageInfo], meta: &BookMeta) -> Result<Vec<u8>, Stri
     // Page table; data follows directly at data_offset.
     let mut pos = data_offset;
     for (i, info) in pages.iter().enumerate() {
-        let e = &mut out[table_offset + i * PAGE_TABLE_ENTRY_SIZE..table_offset + (i + 1) * PAGE_TABLE_ENTRY_SIZE];
+        let e = &mut out[table_offset + i * PAGE_TABLE_ENTRY_SIZE
+            ..table_offset + (i + 1) * PAGE_TABLE_ENTRY_SIZE];
         e[0..8].copy_from_slice(&(pos as u64).to_le_bytes());
         e[8..12].copy_from_slice(&(info.len as u32).to_le_bytes());
         e[12..14].copy_from_slice(&(info.width as u16).to_le_bytes());
@@ -348,7 +363,11 @@ mod tests {
         let meta = BookMeta {
             title: "テスト".into(),
             author: "me".into(),
-            chapters: vec![Chapter { name: "c1".into(), start: 1, end: 1 }],
+            chapters: vec![Chapter {
+                name: "c1".into(),
+                start: 1,
+                end: 1,
+            }],
             ..Default::default()
         };
         let out = build_container(&buf, &meta).unwrap();
