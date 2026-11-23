@@ -22,11 +22,13 @@ impl Gray {
     /// RGBA8 -> luma, compositing transparency over white.
     pub fn from_rgba(rgba: &[u8], w: usize, h: usize) -> Self {
         let px = rgba
-            .chunks_exact(4)
+            .as_chunks::<4>()
+            .0
+            .iter()
             .take(w * h)
-            .map(|p| {
-                let l = 0.299 * p[0] as f32 + 0.587 * p[1] as f32 + 0.114 * p[2] as f32;
-                let a = p[3] as f32 / 255.0;
+            .map(|&[r, g, b, a]| {
+                let l = 0.299 * r as f32 + 0.587 * g as f32 + 0.114 * b as f32;
+                let a = a as f32 / 255.0;
                 l * a + 255.0 * (1.0 - a)
             })
             .collect();
