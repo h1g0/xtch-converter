@@ -143,7 +143,11 @@ mod tests {
 
     #[test]
     fn exact_levels_are_stable() {
-        let g = Gray { w: 4, h: 1, px: vec![0.0, 85.0, 170.0, 255.0] };
+        let g = Gray {
+            w: 4,
+            h: 1,
+            px: vec![0.0, 85.0, 170.0, 255.0],
+        };
         assert_eq!(quantize(&g, 4, Dither::FloydSteinberg), vec![0, 1, 2, 3]);
     }
 }

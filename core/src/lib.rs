@@ -11,7 +11,12 @@ use wasm_bindgen::prelude::*;
 /// Convert one RGBA image into encoded XTG/XTH pages, concatenated.
 /// `options` is a plain object matching `layout::Options` (camelCase).
 #[wasm_bindgen(js_name = convertImage)]
-pub fn convert_image(rgba: &[u8], width: u32, height: u32, options: JsValue) -> Result<Vec<u8>, JsError> {
+pub fn convert_image(
+    rgba: &[u8],
+    width: u32,
+    height: u32,
+    options: JsValue,
+) -> Result<Vec<u8>, JsError> {
     let opts: layout::Options = serde_wasm_bindgen::from_value(options)?;
     layout::convert(rgba, width as usize, height as usize, &opts).map_err(|e| JsError::new(&e))
 }
@@ -56,7 +61,11 @@ pub fn build_container_prefix(headers: &[u8], meta: JsValue) -> Result<Vec<u8>, 
         chapters: m
             .chapters
             .into_iter()
-            .map(|c| format::Chapter { name: c.name, start: c.start, end: c.end })
+            .map(|c| format::Chapter {
+                name: c.name,
+                start: c.start,
+                end: c.end,
+            })
             .collect(),
     };
     format::build_prefix(&infos, &meta).map_err(|e| JsError::new(&e))
@@ -65,7 +74,9 @@ pub fn build_container_prefix(headers: &[u8], meta: JsValue) -> Result<Vec<u8>, 
 /// Number of pages in a buffer of concatenated XTG/XTH pages.
 #[wasm_bindgen(js_name = countPages)]
 pub fn count_pages(pages: &[u8]) -> Result<u32, JsError> {
-    Ok(format::split_pages(pages).map_err(|e| JsError::new(&e))?.len() as u32)
+    Ok(format::split_pages(pages)
+        .map_err(|e| JsError::new(&e))?
+        .len() as u32)
 }
 
 /// Decode the `index`-th page of a concatenated page buffer to RGBA (for previews).
@@ -77,7 +88,11 @@ pub fn decode_page(pages: &[u8], index: u32) -> Result<DecodedPage, JsError> {
         .ok_or_else(|| JsError::new("page index out of range"))?;
     let (info, gray) = format::decode_page_gray(bytes).map_err(|e| JsError::new(&e))?;
     let rgba = gray.iter().flat_map(|&v| [v, v, v, 255]).collect();
-    Ok(DecodedPage { width: info.width as u32, height: info.height as u32, rgba })
+    Ok(DecodedPage {
+        width: info.width as u32,
+        height: info.height as u32,
+        rgba,
+    })
 }
 
 #[wasm_bindgen]

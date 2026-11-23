@@ -123,7 +123,11 @@ pub fn frames(src: Gray, o: &Options) -> Vec<Gray> {
             .into_iter()
             .map(|y| {
                 let band = scaled.crop(0, y, h, w.min(len));
-                let band = if band.h < w { band.center_on(h, w) } else { band };
+                let band = if band.h < w {
+                    band.center_on(h, w)
+                } else {
+                    band
+                };
                 match o.rotate {
                     Rotation::Cw => band.rotate_cw(),
                     Rotation::Ccw => band.rotate_ccw(),
@@ -138,7 +142,11 @@ pub fn frames(src: Gray, o: &Options) -> Vec<Gray> {
             .into_iter()
             .map(|x| {
                 let strip = scaled.crop(x, 0, w.min(len), h);
-                if strip.w < w { strip.center_on(w, h) } else { strip }
+                if strip.w < w {
+                    strip.center_on(w, h)
+                } else {
+                    strip
+                }
             })
             .collect();
         if o.strip_order == StripOrder::Rtl {
@@ -151,9 +159,13 @@ pub fn frames(src: Gray, o: &Options) -> Vec<Gray> {
 /// Full pipeline for one source image: returns encoded pages back to back.
 pub fn convert(rgba: &[u8], w: usize, h: usize, o: &Options) -> Result<Vec<u8>, String> {
     if w == 0 || h == 0 || rgba.len() < w * h * 4 {
-        return Err(format!("invalid image buffer ({w}x{h}, {} bytes)", rgba.len()));
+        return Err(format!(
+            "invalid image buffer ({w}x{h}, {} bytes)",
+            rgba.len()
+        ));
     }
-    if o.width == 0 || o.height == 0 || o.width > u16::MAX as usize || o.height > u16::MAX as usize {
+    if o.width == 0 || o.height == 0 || o.width > u16::MAX as usize || o.height > u16::MAX as usize
+    {
         return Err("invalid device size".into());
     }
     let levels = if o.bits == 2 { 4 } else { 2 };
@@ -189,7 +201,10 @@ mod tests {
     }
 
     fn opts(mode: Mode) -> Options {
-        Options { mode, ..Default::default() }
+        Options {
+            mode,
+            ..Default::default()
+        }
     }
 
     #[test]
@@ -218,7 +233,11 @@ mod tests {
                 g.px[y * 1600 + x] = 0.0; // dark at left edge
             }
         }
-        let o = Options { mode: Mode::Split, strip_order: StripOrder::Rtl, ..Default::default() };
+        let o = Options {
+            mode: Mode::Split,
+            strip_order: StripOrder::Rtl,
+            ..Default::default()
+        };
         let f = frames(g, &o);
         assert!(f.first().unwrap().px[400 * 480 + 10] > 200.0);
         assert!(f.last().unwrap().px[400 * 480 + 10] < 50.0);
@@ -234,13 +253,20 @@ mod tests {
 
     #[test]
     fn x3_resolution() {
-        let o = Options { width: 528, height: 792, mode: Mode::Split, ..Default::default() };
+        let o = Options {
+            width: 528,
+            height: 792,
+            mode: Mode::Split,
+            ..Default::default()
+        };
         let rgba = vec![255u8; 1000 * 1500 * 4];
         let out = convert(&rgba, 1000, 1500, &o).unwrap();
         let pages = format::split_pages(&out).unwrap();
         // 1000 -> 792, 1500 -> 1188 => 3 bands of 528
         assert_eq!(pages.len(), 3);
-        assert!(pages.iter().all(|(p, _)| p.width == 528 && p.height == 792 && p.bits == 2));
+        assert!(pages
+            .iter()
+            .all(|(p, _)| p.width == 528 && p.height == 792 && p.bits == 2));
     }
 
     #[test]
